@@ -469,7 +469,7 @@ def parse_function(example_proto):
 > >
 > > * 返回你想要的数据
 
-* 使用dataset读取tfrecords
+* **使用dataset读取tfrecords**
   * 读入数据，创建dataset<font color=red>(用到昨天看的TFRecordDataset)</font>
 
   ```python
