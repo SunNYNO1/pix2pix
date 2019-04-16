@@ -746,11 +746,11 @@ def parse_function(example_proto):
 
   * **generator**
 
-    ![1555295911845](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555295911845.png)
+    ![1555295911845](生成器架构.png)
 
   * **discriminator**
 
-    ![1555296007222](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555296007222.png)
+    ![1555296007222](判别器架构.png)
 
 * **其他问题**
 
