@@ -746,11 +746,11 @@ def parse_function(example_proto):
 
   * **generator**
 
-    ![1555295911845](生成器架构.png)
+    ![1555295911845](imgs/生成器架构.png)
 
   * **discriminator**
 
-    ![1555296007222](判别器架构.png)
+    ![1555296007222](imgs/判别器架构.png)
 
 * **其他问题**
 
