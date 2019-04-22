@@ -1,4 +1,4 @@
-##    **pix2pix**学习
+# pix2pix学习
 
 ### 整体规划（一个月）
 
@@ -8,16 +8,20 @@
 >
 > 3、创建优化器
 
+
+
+## 2019/4/9
+
 ### 一周备忘录
 
 > 构建pix2pix的数据迭代器
 
-* 1、了解pix2pix的输入（阅读源代码）
-* 2、迭代器的输出是什么
-* 3、自己写一遍数据迭代器（参考连接：https://www.jianshu.com/p/eec32f6c5503）
-* 4、测试自己的数据迭代器
+- 1、了解pix2pix的输入（阅读源代码）
+- 2、迭代器的输出是什么
+- 3、自己写一遍数据迭代器（参考连接：https://www.jianshu.com/p/eec32f6c5503）
+- 4、测试自己的数据迭代器
 
-### 2019/4/9
+
 
 > 今日任务
 
@@ -746,11 +750,11 @@ def parse_function(example_proto):
 
   * **generator**
 
-    ![1555295911845](imgs/生成器架构.png)
+    ![1555295911845](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555295911845.png)
 
   * **discriminator**
 
-    ![1555296007222](imgs/判别器架构.png)
+    ![1555296007222](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555296007222.png)
 
 * **其他问题**
 
@@ -798,27 +802,26 @@ def parse_function(example_proto):
 
     > padding中每个[a, b]都代表在相应的维度前后加上指定行数的0，比如例子中：[2, 1]指的是第0维（即行所在维度）的前面加2行0，后面加一行0；[1, 1]指的是在第1维（即列所在维度）前面加上1行0，后面加上1行0
 
-### 一周备忘录
 
-> 完成pix2pix模型
-
-- 1、写pix2pix网路结构
-- 2、完成pix2pix模型优化器部分
-- 3、训练完整的pix2pix模型，实现1920*1080输出
-
->  一篇论文-deblur（论文主要思想+源码阅读）
-
-
-
-> 周六：
-
-* fgan
-* 信息论作业
-* 周报
-
-### 
 
 ## 2019-4-15
+
+### 一周备忘录（2019-4-15）
+
+- [x] 1、写pix2pix网络结构
+- [ ] 2、完成pix2pix模型优化器部分
+  - 理清solver模块思路，及模块间关系
+  - test代码
+  - 完善solver模块
+- [x] ~~3、训练完整的pix2pix模型，实现1920*1080输出~~
+
+- [ ] 其他
+
+  * 一篇论文-deblur（论文主要思想+~~源码阅读~~）
+
+  * 信息论作业
+
+  * 周报
 
 > 今日计划
 
@@ -1068,3 +1071,382 @@ def parse_function(example_proto):
 
 > 今日计划
 
+- [x] pix2pix优化器
+- [ ] 2点30前：深度学习视频
+- [ ] pix2pix模块化
+- [ ] deblur论文
+
+> pix2pix优化器
+
+* **构建损失函数**
+
+  * 判别器损失：
+
+    ```python
+    tf.reduce_mean(-(tf.log( D(input_img，target_img) + epsilon ) + tf.log(1-D(inputimg，gengeraor_img) + epsilon )))
+    ```
+
+  * 生成器损失：
+
+    ```python 
+    #生成器第一部分损失
+    gen_loss = tf.reduce_mean(-(tf.log(D(generator_img)+epsilon))
+    #L1损失
+    l1_loss = tf.reduce_mean(tf.abs(target_img - generator_img))
+                   
+    #总的生成器损失
+    gen_l1_loss = gen_wight*gen_loss + l1_wight*l1_loss               
+    ```
+
+  * 代码与原文有些区别：
+
+    - 原文损失没有Epsilon参数
+
+    - 原文中的期望求解E()：tf.reduce_mean()
+
+    - 原文中的损失公式：
+
+      > 总损失：
+
+      ![1555385529488](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555385529488.png)
+
+      
+
+      > 生成损失和判别损失放在一起：
+
+      ![1555385379993](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555385379993.png)
+
+      > L1损失：
+
+      
+
+      ![1555385428112](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555385428112.png)
+
+      
+
+* **列出需要更新的变量列表**
+
+  * 在create_generator、create_discriminator函数中的变量前，**使用with tf.veriable_scope()函数，为变量指定前缀**
+
+  * 使用var.name.startswith("discriminator"）指定变量进行更新
+
+    ```python
+    dis_vars = [var for var in tf.trainable_variables() if var.name.startswith("discriminator")
+    ```
+
+* **优化器更新参数**
+
+  * 初始化optimizer
+
+    ```python
+    optimizer = tf.train.AdamOptimizer( learning_rate, beta1,beta2)
+    
+    #***其他优化器***
+    
+    #GradientDescentOptimizer 
+    #AdagradOptimizer 
+    #AdagradDAOptimizer 
+    #MomentumOptimizer 
+    #FtrlOptimizer 
+    #RMSPropOptimizer
+    
+    #***其他优化器***
+    --------------------- 
+    #原文：https://blog.csdn.net/xierhacker/article/details/53174558 
+    ```
+
+    >  这里的beta1表示：第一个动量的衰减率
+
+  * 使用optimizer更新参数
+
+    ```python
+    train = optimizer.minimize(loss, varlist)
+    #或者
+    grads_and_vars = gen_optim.compute_gradients(loss, var_list)
+    gen_train = gen_optim.apply_gradients(gen_grads_and_vars)
+    ```
+
+    > **optimizer.minimiz（）等价于**
+    >
+    > **grads_and_vars = optimizer.compute_gradients(gen_loss, var_list=gen_tvars)**
+    >
+    > **train = optimizer.apply_gradients(gen_grads_and_vars)的加和**
+
+* **使用指数滑动平均（EMA）（是否就是指数加权平均）:**
+
+  ```python
+  ema = tf.train.ExponentialMovingAverage(decay=0.99)
+  update_losses = ema.apply([discrim_loss, gen_loss_GAN, gen_loss_L1])#为这些变量设置影子变量
+  ema.average([变量名列表])#获取变量的影子变量
+  ```
+
+  > * 所谓影子变量，就是对原变量的复制，使得原变量更新的时候，影子变量依然维持原值
+  > * 用于更新参数、变量
+  >
+  > * 可以和其他优化算法结合使用
+  > * [参考链接1](https://www.jianshu.com/p/2f53606d4b6d)、[参考链接2](http://www.cnblogs.com/hellcat/p/8583379.html)
+
+* **其他**：
+
+  * 设置global_step:
+
+    ```
+    global_step = tf.train.get_or_create_global_step()
+    incr_global_step = tf.assign(global_step, global_step+1)
+    ```
+
+  * tensorflow中的赋值：
+
+    ```python
+    tf.assign（A,B）#将B的值赋值给A
+    ```
+
+> 今日总结
+
+* 在写优化器的时候，没有理清逻辑，思路比较混乱，也没有和之前写的几个模块联系在一起，没有写完优化器；所以接下来的主要任务是对比世雄的代码和源代码，<font color=red>写一个存储图片的模块用于保存生成图像；理清各个模块之间的联系；写test代码</font>，**先完成基本的训练功能，在考虑使用tensorboard、保存model**
+* 执行计划上，一直拖在第一条，其他任务也没有完成
+
+## 2019-4-17
+
+> 今日计划
+
+- [x] 理清solver模块思路，及模块间关系
+- [x] 实验室服务
+- [ ] deblur
+- [x] 和世雄讨论代码问题，接下来的安排
+- [ ] 1深度学习视频
+
+> 理清solver模块思路，及模块间关系
+
+* 报错corrupted record at 0
+
+  * 由于路径设置错误，没有成功导入数据所致
+
+* 反卷积的原理，及边长计算公式
+
+  * ouput = (input-1)*s+k-2p
+
+* 使用尺寸不一的图片：
+
+  * 修改placeholder的shape，设置长宽为None
+
+  * concat报错：
+
+    * 报错的shape[0]是指什么
+
+    - 已经知道input_img、target_img的shape=[512\*384*3]，所以shape[0]shape[1]指的不是两张图片
+
+    ```python
+    input_target_img = tf.concat([input_img,target_img],axis=3)#concat报错
+    
+    #报错内容
+    ConcatOp : Dimensions of inputs should match: shape[0] = [1,3,512,512] vs. shape[1] = [1,3,512,384]
+    ```
+
+    * 对concat函数进行测试
+
+    ```python
+    a = [[[[1,2,3],[1,2,3]],[[1,2,3],[1,2,3]]],[[[1,2,3],[1,2,3]],[[1,2,3],[1,2,3]]]]
+    b = [[[[1,2,3],[1,2,3]],[[1,2,3],[1,2,3]]],[[[1,2,3],[1,2,3]],[[1,2,3],[1,2,3]]]]
+    
+    print(np.array(a).shape)
+    
+    c = tf.concat([a,b],axis=1)
+    with tf.Session() as sess:
+        m = sess.run(c)
+        print(m.shape)
+    ```
+
+    * 输出：(2, 2, 2, 3)，(2, 4, 2, 3)
+
+    * 结论：axis=1是对通道进行合并，axis=0，1，2，3，依次对应<font color=red>batch，通道，长，宽</font>；并不是batch，宽，长，通道
+
+    * 疑问：而原文是axis=3，那么是对宽度进行合并？？？
+
+      > 原文中依然是对通道的合并，至于为什么上面测试与原文的axis对应关系不同，可能是因为data_format的原因
+
+      > 关于data_format
+      >
+      > > 在如何表示一组彩色图片的问题上，Theano和TensorFlow发生了分歧，也即**Theano模式会把100张RGB三通道的16×32（高为16宽为32）彩色图表示为下面这种形式（100,3,16,32）**，**Caffe**采取的也是这种方式。
+      > >
+      > > **而TensorFlow**，的表达形式是**（100,16,32,3）**
+      > >
+      > > ```python
+      > > #keras
+      > > Convolution2D(
+      > >     batch_input_shape=(None, 1, 28, 28),   #多少数据  通道数  宽  高
+      > >     filters=32,     #滤波器数量
+      > >     kernel_size=5,   #滤波器大小5x5
+      > >     strides=1,       #步长1
+      > >     padding='same',     # Padding method
+      > >     data_format='channels_first',
+      > > )
+      > > #在卷积函数中指定data_format为'channels_first'，即通道优先即可
+      > > ```
+      > >
+      > > ```python
+      > > #tensorflow数据格式转换
+      > > '''
+      > > NHWC 
+      > > [batch, in_height, in_width, in_channels]
+      > > NCHW 
+      > > [batch, in_channels, in_height, in_width]
+      > > '''
+      > > 
+      > > #NHWC –> NCHW
+      > > x = tf.reshape(tf.range(24), [1, 3, 4, 2])
+      > > out = tf.transpose(x, [0, 3, 1, 2])
+      > > print x.shape
+      > > print out.shape
+      > > (1, 3, 4, 2)
+      > > (1, 2, 3, 4)
+      > > 
+      > > #NCHW –> NHWC
+      > > x = tf.reshape(tf.range(24), [1, 2, 3, 4])
+      > > out = tf.transpose(x, [0, 2, 3, 1])
+      > > print x.shape
+      > > print out.shape
+      > > (1, 2, 3, 4)
+      > > (1, 3, 4, 2)
+      > > ```
+      > >
+      > > 
+
+    - 修改axis=1，依然报错，猜想报错的原因可能和图片尺寸不一
+
+> 今日总结
+
+* 完成了最简单的train函数，对256*256的数据可以跑通，但是当输入不同尺寸就会报错，刚开始以为是axis设置参数不正确，但修改之后依然报同样的错误
+
+
+
+## 2019-4-18
+
+> 今日计划
+
+- [ ] pix2pix
+  - [x] 更换统一尺寸的数据集进行训练看是否报错
+  - [x] 更换统一尺寸的X*X矩形图片进行训练
+  - [ ] 如果实验依旧不成功，先在256*256的基础上，把test部分写好，完善代码（test、save_model、<font color=red>summary(tensorboard的使用)</font>）
+  - [ ] ~~完善代码后，写resize函数，对输入图片（1920\*1080）缩放到合适尺寸（2048*2048）~~
+  - [ ] ~~[更改网络模型](https://github.com/karolmajek/pix2pix-tensorflow/blob/master/pix2pix.py#L262)，将缩放后的图片输入到模型中训练~~
+  - [ ] ~~再将输出的图片，重新缩放到原尺寸（1920*1080）~~
+- [ ] 中午：deblur
+
+> 更换统一尺寸的数据集进行训练看是否报错（384*512）
+
+* 依然在以下地方报错：
+
+  ```python
+  #generator.py
+  deconcat2 = tf.concat([dedrop1,norm7],axis=3)
+  ```
+
+  * 通过打印dedrop1，norm7的形状，发现这两个形状不一致
+
+  ```python
+  print('dedrop1', dedrop1.shape,'norm7:',norm7)
+  ```
+
+  * 于是检查生成模型网络结构，发现384*512的尺寸输入到8层encoder中（每层输出都会除以2），导致
+    * 第7层之后（shape为[3，4]）没有办法整除，到了第8层其将会缩放到[4,4]
+    * 进入decoder之后进行反卷积，最后的输出会变成[512,512]
+    * 而这里的[512*512]的输出则是生成器的输出(即generator_img)，当计算L1损失的时候会计算target_img-generator_img，但是前者是[384\*512]，而后者是[512\*512]，所以报错
+
+* debug的关键：
+
+  * 从报错处入手，打印出来查看结果
+
+> deblur
+
+* 论文内容：
+
+  * 数据集：GOPRO
+
+  * 主要贡献：
+
+    * 提出模糊化的LOSS函数与模型结构
+    * 随机轨道生成法生成模糊数据集
+    * 用于去模糊的新的评估算法（基于提高目标检测率）
+
+  * 生成模糊图像的原理：
+
+    * 使用运动轨迹随机生成方法<font color=red>(马尔可夫随机过程)</font>
+    * 对轨迹"子像素插值"，以生成blur kernel
+
+  * LOSS:
+
+    * L = Lgan + Ladv
+
+    * Lgan用的就是WGAN-GP的损失函数
+
+    * Ladv称之为Propatual loss（感知损失)
+
+      > 基于目标图像与生成图像特征图的差
+
+  * 网络结构（类似pix2pix）
+
+    * <font color=red>WGAN-GP体现在哪里？（是体现在Lgan Loss上吗）</font>
+    * <font color=red>Resout结构是什么样子的？与unet类似？</font>
+
+  ![1555636795180](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555636795180.png)
+
+  ![1555636822122](C:\Users\12466\AppData\Roaming\Typora\typora-user-images\1555636822122.png)
+
+  
+
+> 今日总结
+
+* 弄清楚了pix2pix网络结构及其特殊性，一些细微的思想还要看原论文
+* 基于高清图像进行训练的想法不可行，因为没有高清数据集作为训练集，只改变测试图像的输入输出大小没有意义
+  * 基于以上问题可以有两种解决方案
+    * 1、找到1024*1024或者2048\*2048的高清训练集，然后再按照上面的想法接着做
+    * 2、将当前的训练集图片resize成512*512的图像进行训练，结合sniper对其512\*512的切片作为输入，从而实现高分辨率的图像数据增强<font color=red>(小论文思路)</font>
+
+
+
+## 2019-4-19
+
+> 今日计划
+
+- [x] 写resize函数，将训练集resize到512*512
+- [ ] 中午：pix2pix论文（博客、原论文）
+- [ ] 下午：deblur代码
+
+## 2019-4-22
+
+### 一周备忘录
+
+* idea
+
+  > - [ ] 世雄的风格迁移模块代码
+  > - [ ] 将风格迁移加入pix2pix中
+
+* 完善solver模块（周三前）
+
+  > - [ ] 加入summary
+  > - [ ] 保存model
+  > - [ ] 保存图片
+  > - [ ] test
+
+* pix2pix论文、cGAN论文，ppt
+
+* PGGAN论文
+
+* 复制粘贴的项目
+
+* 周末：
+
+  > - [ ] 信息论作业
+  > - [ ] 周报
+
+> 今日计划
+
+- [ ] pix2pix博客，论文
+- [ ] 完善solver模块
+
+> pix2pix论文
+
+* bottleneck layer
+* patchGAN
+* U-NET
