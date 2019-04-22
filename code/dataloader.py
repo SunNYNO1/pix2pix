@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import cv2 as cv
 import glob
@@ -13,12 +12,17 @@ class Dataset():
     
     def __init__(self,args):
         self.TFRecords_List = []
-        self.NUM_TFRECORDS = 100
-        self.NUM_FILES_IN_TFRECORDS = 7
+
+        #***需要根据数据集修改***
+        self.NUM_TFRECORDS = 1
+        self.NUM_FILES_IN_TFRECORDS = 5
+        #***需要根据数据集修改***
+
         self.args = args
-        #***数据路径***
-        self.FILENAME = args.dataset
-        #***数据路径***
+        
+        #***tfrecords数据保存路径***
+        self.FILENAME = 'C:\\project\\PY\\GAN\\pix2pix-tensorflow-master\\pix2pix-tensorflow-master\\rain\\facades\\train_test\\'
+        #***tfrecords数据保存路径***
         
     
     #读取所有图像路径到列表
@@ -172,7 +176,7 @@ class Dataset():
         tfrecords_list = []
 
         for data in os.listdir(self.args.dataset):
-            tfrecords_list.append(os.path.join(self.args.dataSet, data))
+            tfrecords_list.append(os.path.join(self.args.dataset, data))
 
         dataset = tf.data.TFRecordDataset(tfrecords_list)
         new_dataset = dataset.map(self.parse_function)

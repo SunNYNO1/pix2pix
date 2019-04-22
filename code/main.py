@@ -1,12 +1,12 @@
 import os
 from config import parse_args
 from dataloader import Dataset
-from solver import Solver
+# from solver import Solver
 
 args = parse_args()
 
 dataset = Dataset(args)
-solver = Solver(args)
+# solver = Solver(args)
 
 if __name__ == '__main__':
     module = args.module
@@ -15,7 +15,7 @@ if __name__ == '__main__':
         dataset.create_tfrecord(img_paths)
     elif module == 'test_dataset':
         dataset.test_dataset()
-    elif module == 'train':
-        solver.train()
+    # elif module == 'train':
+    #     solver.train()
     else:
         print("This module has not been created!")

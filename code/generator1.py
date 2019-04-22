@@ -31,19 +31,19 @@ def create_generator(input_img,output_channels):
     norm7 = tf.layers.batch_normalization(conv7, axis=3, epsilon=1e-5, momentum=0.1, training=True, gamma_initializer=tf.random_normal_initializer(1.0,0.02))
     lrelu7 = tf.nn.leaky_relu(norm7, alpha=0.2)
     
-    # conv8 = tf.layers.conv2d(lrelu7, 64*8, kernel_size=4, strides=(2,2), padding='SAME', kernel_initializer=tf.random_normal_initializer(0, 0.02))
-    # norm8 = tf.layers.batch_normalization(conv8, axis=3, epsilon=1e-5, momentum=0.1, training=True, gamma_initializer=tf.random_normal_initializer(1.0,0.02))
+    conv8 = tf.layers.conv2d(lrelu7, 64*8, kernel_size=4, strides=(2,2), padding='SAME', kernel_initializer=tf.random_normal_initializer(0, 0.02))
+    norm8 = tf.layers.batch_normalization(conv8, axis=3, epsilon=1e-5, momentum=0.1, training=True, gamma_initializer=tf.random_normal_initializer(1.0,0.02))
     
     
     #***decoder***
-    # derelu1 = tf.nn.relu(norm8)
-    # deconv1 = tf.layers.conv2d_transpose(derelu1, 64*8, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=tf.random_normal_initializer(0, 0.02))
-    # denorm1 = tf.layers.batch_normalization(deconv1, axis=3, epsilon=1e-5, momentum=0.1, training=True, gamma_initializer=tf.random_normal_initializer(1.0,0.02))
-    # dedrop1 = tf.nn.dropout(denorm1, keep_prob=1 - 0.5)
+    derelu1 = tf.nn.relu(norm8)
+    deconv1 = tf.layers.conv2d_transpose(derelu1, 64*8, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=tf.random_normal_initializer(0, 0.02))
+    denorm1 = tf.layers.batch_normalization(deconv1, axis=3, epsilon=1e-5, momentum=0.1, training=True, gamma_initializer=tf.random_normal_initializer(1.0,0.02))
+    dedrop1 = tf.nn.dropout(denorm1, keep_prob=1 - 0.5)
     
-    # print('dedrop1', dedrop1.shape,'norm7:',norm7)
-    # deconcat2 = tf.concat([dedrop1,norm7],axis=3)
-    derelu2 = tf.nn.relu(lrelu7)
+    
+    deconcat2 = tf.concat([dedrop1,norm7],axis=3)
+    derelu2 = tf.nn.relu(deconcat2)
     deconv2 = tf.layers.conv2d_transpose(derelu2, 64*8, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=tf.random_normal_initializer(0, 0.02))
     denorm2 = tf.layers.batch_normalization(deconv2,axis=3, epsilon=1e-5, momentum=0.1, training=True, gamma_initializer=tf.random_normal_initializer(1.0,0.02))
     dedrop2 = tf.nn.dropout(denorm2,keep_prob=0.5)
@@ -81,4 +81,4 @@ def create_generator(input_img,output_channels):
     #源代码自定义的tanh函数
     detanh8 = tf.nn.tanh(denorm8)
     
-    return detanh8
+    return detanh8 
